@@ -1,10 +1,10 @@
 
 const proxyMap = new WeakMap()  // 缓存已经被深层代理过的对象
 
-const targetMap = new WeakMap() // 
+const targetMap = new WeakMap() // 用于存放具有副作用函数的对象
 let activeEffect = null
 
-export function effect(fn, options: any = {}) {
+export function effect(fn, options: any = {}) {  // 将副作用函数fn抛出
   const effectFn = () => {
     try {
       activeEffect = effectFn
@@ -22,6 +22,8 @@ export function effect(fn, options: any = {}) {
 
 // 收集副作用函数 为属性添加effect
 function track(target, key) {
+  // targetMap Map对象  用于存放所有的副作用函数
+  // 访问对象的时候 
   // targetMap = {  // 存成这样
   //   target: {
   //     key: [effect1, effect2, effect3,...]
@@ -31,44 +33,46 @@ function track(target, key) {
   //   }
   // }
   let despMap = targetMap.get(target)
-
   if (!despMap) {
     despMap = new Map()
     targetMap.set(target, despMap)
   }
   let deps = despMap.get(key)
-
   if (!deps) {
-    deps = new Set()
+    deps = new Set()  // 用于存放副作用函数
   }
-  console.log(activeEffect)
+  // console.log(1111, activeEffect)
   if (!deps.has(activeEffect) && activeEffect) {
-    deps.add(activeEffect)
+    deps.add(activeEffect)  // 存放副作用函数
   }
   despMap.set(key, deps)
+  console.error('track-targetMap', targetMap)
+  // console.error('track-despMap', despMap)
 }
 
 // 触发属性的effect
 export function trigger(target, key) {
   const despMap = targetMap.get(target)
   // 当前对象中所有的key都没有副作用函数（从来没有被使用过）
-
+  console.log('trigger-targetMap', targetMap)
+  console.log('trigger-despMap', despMap)
   if (!despMap) {
     return
   }
   const deps = despMap.get(key)
-  console.log(deps)
+  // console.log(deps)
   if (!deps) {
     // 表示这个属性没有依赖
     return
   }
-  deps.forEach(effectFn => {
+  console.log('trigger-deps', deps)
+  deps.forEach(effectFn => { // 遍历set 触发所有的副作用函数
     if (effectFn.scheduler) {
       effectFn.scheduler()
     } else {
-      effectFn() // 将该属性上的所有的副作用函数全部触发
+      console.error('11111', effectFn)
+      effectFn()
     }
-
   })
 }
 export function reactive(target) {
